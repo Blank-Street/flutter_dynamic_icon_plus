@@ -1,6 +1,5 @@
 import Flutter
 import UIKit
-import SwiftTryCatch
 
 public class FlutterDynamicIconPlusPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -27,7 +26,7 @@ public class FlutterDynamicIconPlusPlugin: NSObject, FlutterPlugin {
             }
         case MethodNames.setAlternateIconName:
             if #available(iOS 10.3, *){
-                SwiftTryCatch.try {
+                do {
                     let args = call.arguments as! [String: Any]
                     var iconName = args[Arguments.iconName]
                     let isSilent = args[Arguments.isSilent]
@@ -41,16 +40,18 @@ public class FlutterDynamicIconPlusPlugin: NSObject, FlutterPlugin {
                     } else {
                         self.setIconWithAlert(iconName as? String, result: result)
                     }
-                } catch: { (exception) in
-                    let errorReason = exception?.reason ?? "Unknown Error setAlternateIconName"
+
+                    result(nil)
+                } catch {
+                    let errorReason = (error as NSError).localizedDescription.isEmpty
+                        ? "Unknown Error setAlternateIconName"
+                        : (error as NSError).localizedDescription
                     print("\(errorReason)")
                     result(
                         FlutterError(
                             code: "Failed to set icon: \(errorReason)",
                             message: errorReason,
                             details: nil))
-                } finally: {
-                    result(nil)
                 }
             }
             else {
@@ -69,40 +70,40 @@ public class FlutterDynamicIconPlusPlugin: NSObject, FlutterPlugin {
                 if #available(iOS 10.0, *) {
                     UNUserNotificationCenter.current().requestAuthorization(options: .badge) { granted, error in
                         if granted {
-                            SwiftTryCatch.try {
+                            do {
                                 let batchIconNumber = (args[Arguments.batchIconNumber] as? NSNumber)?.intValue ?? 0
                                 UIApplication.shared.applicationIconBadgeNumber = batchIconNumber
                                 result(nil)
-                            } catch: { (exception) in
-                                let errorReason = exception?.reason ?? "Unknown Error setApplicationIconBadgNumber"
+                            } catch {
+                                let errorReason = (error as NSError).localizedDescription.isEmpty
+                                    ? "Unknown Error setApplicationIconBadgNumber"
+                                    : (error as NSError).localizedDescription
                                 print("\(errorReason)")
                                 result(
                                     FlutterError(
                                         code: "Failed to set batch icon number",
                                         message: errorReason,
                                         details: nil))
-                            } finally: {
-                                result(nil)
                             }
                         }
                         else {
-                            SwiftTryCatch.try {
+                            do {
                                 UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
                                     (granted, error) in
                                     let batchIconNumber = (args[Arguments.batchIconNumber] as? NSNumber)?.intValue ?? 0
                                     UIApplication.shared.applicationIconBadgeNumber = batchIconNumber
                                     result(nil)
                                 }
-                            } catch: { (exception) in
-                                let errorReason = exception?.reason ?? "Unknown Error setApplicationIconBadgeNumber"
+                            } catch {
+                                let errorReason = (error as NSError).localizedDescription.isEmpty
+                                    ? "Unknown Error setApplicationIconBadgeNumber"
+                                    : (error as NSError).localizedDescription
                                 print("\(errorReason)")
                                 result(
                                     FlutterError(
                                         code: "Failed to set icon",
                                         message: errorReason,
                                         details: nil))
-                            } finally: {
-                                result(nil)
                             }
                         }
                     }
@@ -116,23 +117,23 @@ public class FlutterDynamicIconPlusPlugin: NSObject, FlutterPlugin {
                 }
             }
             else {
-                SwiftTryCatch.try {
+                do {
                     let notificationSettings = UIUserNotificationSettings(types: .badge, categories: nil)
                     
                     UIApplication.shared.registerUserNotificationSettings(notificationSettings)
                     let batchIconNumber = (args[Arguments.batchIconNumber] as? NSNumber)?.intValue ?? 0
                     UIApplication.shared.applicationIconBadgeNumber = batchIconNumber
                     result(nil)
-                } catch: { (exception) in
-                    let errorReason = exception?.reason ?? "Unknown Error setApplicationIconBadgeNumber"
+                } catch {
+                    let errorReason = (error as NSError).localizedDescription.isEmpty
+                        ? "Unknown Error setApplicationIconBadgeNumber"
+                        : (error as NSError).localizedDescription
                     print(errorReason)
                     result(
                         FlutterError(
                             code: "Failed to set batch icon number",
                             message: errorReason,
                             details: nil))
-                } finally : {
-                    result(nil)
                 }
             }
         default:
@@ -141,6 +142,7 @@ public class FlutterDynamicIconPlusPlugin: NSObject, FlutterPlugin {
     }
     
     private func setIconWithoutAlert(_ appIcon: String?, result: @escaping FlutterResult) {
+        print("setIconWithoutAlert: \(appIcon)")
         if UIApplication.shared.responds(to: #selector(getter: UIApplication.supportsAlternateIcons)) && UIApplication.shared.supportsAlternateIcons {
             typealias setAlternateIconName = @convention(c) (NSObject, Selector, NSString?, @escaping (NSError) -> ()) -> ()
             let selectorString = "_setAlternateIconName:completionHandler:"
